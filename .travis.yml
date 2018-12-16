@@ -6,6 +6,8 @@ sudo: required
 env:
   global:
     - CRATE_NAME=statik
+    - DIRECTORY=/tmp
+    - PORT=4000
 
 matrix:
   include:
