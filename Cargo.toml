@@ -1,0 +1,12 @@
+[package]
+name = "statik"
+version = "0.1.0"
+authors = ["Gabriel Taylor Russ <gabriel.taylor.russ@gmail.com>"]
+
+[dependencies]
+futures = "0.1"
+env_logger = "0.5"
+clap = "2.31"
+
+actix = "0.7"
+actix-web = "0.7"
