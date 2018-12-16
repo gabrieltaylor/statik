@@ -14,6 +14,9 @@ main() {
     cross test --target $TARGET
     cross test --target $TARGET --release
 
+    export DIRECTORY=/tmp
+    export PORT=4000
+
     cross run --target $TARGET
     cross run --target $TARGET --release
 }
