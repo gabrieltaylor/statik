@@ -1,60 +1,81 @@
-sudo: true
+dist: trusty
 language: rust
-cache: cargo
-rust:
-  - nightly
-  - nightly-2018-06-19
-  - beta
-  - stable
-  - 1.21.0
-matrix:
-    allow_failures:
-        - rust: nightly
-before_script:
-  - |
-    pip install git+git://github.com/kbknapp/travis-cargo.git --user &&
-    export PATH=$HOME/.local/bin:$PATH
-  - |
-    if [[ "$TRAVIS_RUST_VERSION" == "1.13.0" ]]; then
-        echo "Old Rust detected, removing version-sync dependency"
-        sed -i "/^version-sync =/d" Cargo.toml
-        rm "tests/version-numbers.rs"
-    fi
-script:
-  - |
-    travis-cargo --only stable test -- --verbose --no-default-features &&
-    travis-cargo --skip nightly test -- --verbose --features "yaml unstable" &&
-    travis-cargo --only nightly test -- --verbose --features "yaml unstable nightly" &&
-    travis-cargo --only nightly bench -- --no-run
-addons:
-  apt:
-    packages:
-    - binutils-dev
-    - libcurl4-openssl-dev
-    - libelf-dev
-    - libdw-dev
-    - libiberty-dev
-    - cmake
-    - gcc
-    - zlib1g-dev
-after_success:
-  - |
-    wget https://github.com/SimonKagstrom/kcov/archive/master.tar.gz &&
-    tar xzf master.tar.gz &&
-    cd kcov-master &&
-    mkdir build &&
-    cd build &&
-    cmake .. &&
-    make &&
-    sudo make install &&
-    cd ../.. &&
-    rm -rf kcov-master &&
-    cargo clean &&
-    cargo test --no-run --features "yaml unstable" &&
-    for file in target/debug/*-*; do mkdir -p "target/cov/$(basename $file)"; kcov --exclude-pattern=/.cargo --verify "target/cov/$(basename $file)" "$file"; done &&
-    kcov --coveralls-id=$TRAVIS_JOB_ID --merge target/cov target/cov/* &&
-    echo "Uploaded code coverage"
+services: docker
+sudo: required
+
 env:
   global:
-    - TRAVIS_CARGO_NIGHTLY_FEATURE=lints
-    - secure: JLBlgHY6OEmhJ8woewNJHmuBokTNUv7/WvLkJGV8xk0t6bXBwSU0jNloXwlH7FiQTc4TccX0PumPDD4MrMgxIAVFPmmmlQOCmdpYP4tqZJ8xo189E5zk8lKF5OyaVYCs5SMmFC3cxCsKjfwGIexNu3ck5Uhwe9jI0tqgkgM3URA=
+    - CRATE_NAME=statik
+
+matrix:
+  include:
+    # Linux
+    # - env: TARGET=aarch64-unknown-linux-gnu
+    # - env: TARGET=arm-unknown-linux-gnueabi
+    # - env: TARGET=armv7-unknown-linux-gnueabihf
+    # - env: TARGET=i686-unknown-linux-gnu
+    # - env: TARGET=i686-unknown-linux-musl
+    # - env: TARGET=mips-unknown-linux-gnu
+    # - env: TARGET=mips64-unknown-linux-gnuabi64
+    # - env: TARGET=mips64el-unknown-linux-gnuabi64
+    # - env: TARGET=mipsel-unknown-linux-gnu
+    # - env: TARGET=powerpc-unknown-linux-gnu
+    # - env: TARGET=powerpc64-unknown-linux-gnu
+    # - env: TARGET=powerpc64le-unknown-linux-gnu
+    # - env: TARGET=s390x-unknown-linux-gnu DISABLE_TESTS=1
+    # - env: TARGET=x86_64-unknown-linux-gnu
+    - env: TARGET=x86_64-unknown-linux-musl # Alpine
+
+    # OSX
+    # - env: TARGET=x86_64-apple-darwin
+    #   os: osx
+
+    # *BSD
+    # - env: TARGET=i686-unknown-freebsd DISABLE_TESTS=1
+    # - env: TARGET=x86_64-unknown-freebsd DISABLE_TESTS=1
+    # - env: TARGET=x86_64-unknown-netbsd DISABLE_TESTS=1
+
+    # Windows
+    # - env: TARGET=x86_64-pc-windows-gnu
+
+before_install:
+  - set -e
+  - rustup self update
+
+install:
+  - sh ci/install.sh
+  - source ~/.cargo/env || true
+
+script:
+  - bash ci/script.sh
+
+after_script: set +e
+
+before_deploy:
+  - sh ci/before_deploy.sh
+
+deploy:
+  api_key:
+    secure: "eRhWSCof5iY8kGi7AQd617jrXGvc1jXTknYMeLugqXH3+NhlMTXN4vxh81v9a1cQy4riXK4imL1zh/JC4+2y3IxlIFpWIMNc3v+g+nnTxfzeKEVjBOV0dv1zJeSV/OCV9zVjghKdCXk1mFKeO0LJ8Po4sIjs6IgaNX02xzS8wr660NoPESkrK1KAmWHTGAeVw+QBKoHBb+t5PBhsShmpIkoQAnUP/mTcS0gzmE3Vn924QB6W0woDeSgAOu/A1kOUbUlL7+wcdLkVXF6qCycZvBnCU4UE5Cy5gBCDTXwFzeTptTl9Se5rEMXzt0few2dOlnalKDesLhfoAR+YIaLlPlRIl6IRE/4mONLm1fIbmt1kZlPJYxayn+gYkV7yPXf4i9MDcqqvvjCQt4kKeuGTy/omWPLwLpFKWeQTWZEE64669qcoCaCuvvMq5fNRy+5lJR3ybGrbjV0jUcYmbOO7u+ejQ8wpdXrdXDeTsmpTtbvTnxmUuECDGAWO0ShWMA5TSuVOEO7ZlMul71yONce4rh0INyJ6x868iCBhcs6J4ZkASfqnO1nzNAu/sR5xzYRJ00Jpu742tKVAgv3h21b0IXtjnfzYy4lRKY0XnAvttpXlD6UQo/GmiuilYKoQfP6TljKe64JLfEFEYygdSI945xhDv9rOAufFCSdX4ZVG6mM="
+  file_glob: true
+  file: $CRATE_NAME-$TRAVIS_TAG-$TARGET.*
+  on:
+    condition: $TRAVIS_RUST_VERSION = stable
+    tags: true
+  provider: releases
+  skip_cleanup: true
+
+cache: cargo
+before_cache:
+  # Travis can't cache files that are not readable by "others"
+  - chmod -R a+r $HOME/.cargo
+
+branches:
+  only:
+    # release tags
+    - /^v\d+\.\d+\.\d+.*$/
+    - master
+
+notifications:
+  email:
+    on_success: never
