@@ -1,0 +1,9 @@
+#!/bin/sh
+
+# ensure code formatted
+cargo fmt --all -- --check
+FORMAT_RES=$?
+if [ $FORMAT_RES -ne 0 ]
+then
+  exit $FORMAT_RES
+fi

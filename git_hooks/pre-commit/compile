@@ -1,0 +1,9 @@
+#!/bin/sh
+
+# compile before commit
+cargo clippy -- -D warnings
+CLIPPY_RES=$?
+if [ $CLIPPY_RES -ne 0 ]
+then
+  exit $CLIPPY_RES
+fi
