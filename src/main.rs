@@ -16,7 +16,7 @@ fn main() {
     let config = Arc::new(get_config());
     let thread_config = config.clone();
     let port = config.value_of("port").unwrap();
-    let address = format!("127.0.0.1:{}", port);
+    let address = format!("0.0.0.0:{}", port);
 
     let sys = actix::System::new("statik");
 

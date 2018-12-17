@@ -2,6 +2,8 @@
 name = "statik"
 version = "0.1.0"
 authors = ["Gabriel Taylor Russ <gabriel.taylor.russ@gmail.com>"]
+description = "A simple static file server"
+license = "MIT"
 
 [dependencies]
 futures = "0.1"
