@@ -3,7 +3,7 @@ extern crate actix_web;
 extern crate clap;
 extern crate env_logger;
 
-use actix_web::{fs, middleware, server, App};
+use actix_web::{fs, server, App};
 use clap::App as Clap;
 use clap::{Arg, ArgMatches};
 use std::sync::Arc;
@@ -24,15 +24,10 @@ fn main() {
         let directory = thread_config.value_of("directory").unwrap();
         let file = thread_config.value_of("file").unwrap();
 
-        App::new()
-            // enable logger
-            .middleware(middleware::Logger::new(
-                r#"%a "%r" %s %b "%{Referer}i" "%{User-Agent}i" %Dms"#,
-            ))
-            .handler(
-                "/",
-                fs::StaticFiles::new(directory).unwrap().index_file(file),
-            )
+        App::new().handler(
+            "/",
+            fs::StaticFiles::new(directory).unwrap().index_file(file),
+        )
     })
     .bind(&address)
     .expect("Cannot start server on given IP/Port")
